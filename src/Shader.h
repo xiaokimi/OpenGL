@@ -2,21 +2,18 @@
 
 #include <string>
 
-enum class ShaderType
-{
-    VERTEXT,
-    FRAGMENT,
-    PROGRAM
-};
-
 class Shader
 {
 public:
     Shader(const std::string& VertexPath, const std::string& FragmentPath);
+    virtual ~Shader();
+
+    void Bind() const;
+    void UnBind() const;
 
 private:
-    void CheckCompileError(unsigned int ShaderID, ShaderType Type);
+    unsigned int CreateShader(const std::string& FilePath, unsigned int ShaderType);
 
 private:
-    unsigned int ID;
+    unsigned int m_ProgramID;
 };

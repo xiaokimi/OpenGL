@@ -15,7 +15,12 @@ file(GLOB_RECURSE SOURCE_FILES
 	${PROJECT_SOURCE_DIR}/src/*.c
 )
 
-set(AllFile ${HEADER_FILES} ${SOURCE_FILES})
+file(GLOB_RECURSE SHADER_FILES
+	${PROJECT_SOURCE_DIR}/res/shaders/*.vert
+	${PROJECT_SOURCE_DIR}/res/shaders/*.frag
+)
+
+set(AllFile ${HEADER_FILES} ${SOURCE_FILES} ${SHADER_FILES})
 
 foreach(fileItem ${AllFile})
 	get_filename_component(PARENT_DIR "${fileItem}" DIRECTORY)

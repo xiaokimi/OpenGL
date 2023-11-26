@@ -8,47 +8,78 @@
 
 Shader::Shader(const std::string& VertexPath, const std::string& FragmentPath)
 {
-    std::string VertexCode, FragmentCode;
-    std::ifstream VertexFile, FragmentFile;
+    unsigned int Vertex = CreateShader(VertexPath, GL_VERTEX_SHADER);
+    unsigned int Fragment = CreateShader(FragmentPath, GL_FRAGMENT_SHADER);
 
-    VertexFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    FragmentFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    m_ProgramID = glCreateProgram();
+    glAttachShader(m_ProgramID, Vertex);
+    glAttachShader(m_ProgramID, Fragment);
+    glLinkProgram(m_ProgramID);
+
+    int Success;
+    glGetProgramiv(m_ProgramID, GL_LINK_STATUS, &Success);
+    if (Success == GL_FALSE)
+    {
+        char InfoLog[1024];
+        glGetProgramInfoLog(m_ProgramID, 1024, NULL, InfoLog);
+        std::cout << "Link program failed.\n" << InfoLog << std::endl;
+    }
+
+    glDeleteShader(Vertex);
+    glDeleteShader(Fragment);
+}
+
+Shader::~Shader()
+{
+    glDeleteProgram(m_ProgramID);
+}
+
+void Shader::Bind() const
+{
+    glUseProgram(m_ProgramID);
+}
+
+void Shader::UnBind() const
+{
+    glUseProgram(0);
+}
+
+unsigned int Shader::CreateShader(const std::string& FilePath, unsigned int ShaderType)
+{
+    std::string ShaderCode;
+
+    std::ifstream File;
+    File.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     try
     {
-        VertexFile.open(VertexPath);
-        FragmentFile.open(FragmentPath);
+        std::stringstream FileStream;
 
-        std::stringstream VertexStream, FragmentStream;
-        VertexStream << VertexFile.rdbuf();
-        FragmentStream << VertexFile.rdbuf();
+        File.open(FilePath);
+        FileStream << File.rdbuf();
+        File.close();
 
-        VertexFile.close();
-        FragmentFile.close();
-
-        VertexCode = VertexStream.str();
-        FragmentCode = FragmentStream.str();
+        ShaderCode = FileStream.str();
     }
     catch (std::ifstream::failure& Error)
     {
-        std::cout << "Error::Shader : File open failed. Reason: " << Error.what() << std::endl;
+        std::cout << "Failed open file : " << FilePath << "\n" << Error.what() << std::endl;
+        return 0;
     }
+    const char* ShaderData = ShaderCode.c_str();
 
-    unsigned int Vertex = glCreateShader(GL_VERTEX_SHADER);
+    unsigned int ShaderID = glCreateShader(ShaderType);
+    glShaderSource(ShaderID, 1, &ShaderData, NULL);
+    glCompileShader(ShaderID);
 
-}
-
-void Shader::CheckCompileError(unsigned int ShaderID, ShaderType Type)
-{
     int Success;
-    char Log[1024];
-
-    if (Type == ShaderType::PROGRAM)
+    glGetShaderiv(ShaderID, GL_COMPILE_STATUS, &Success);
+    if (Success == GL_FALSE)
     {
-        glGetProgramiv(ShaderID, GL_LINK_STATUS, &Success);
-        if (!Success)
-        {
-            glGetProgramInfoLog(ShaderID, 1024, NULL, Log);
-
-        }
+        char InfoLog[1024];
+        glGetShaderInfoLog(ShaderID, 1024, NULL, InfoLog);
+        std::cout << "Compile shader failed : " << FilePath << "\n" << InfoLog << std::endl;
+        glDeleteShader(ShaderID);
+        return 0;
     }
+    return ShaderID;
 }
